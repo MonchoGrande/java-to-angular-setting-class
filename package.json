@@ -2,7 +2,7 @@
   "name": "java-to-angular-setting-class",
   "displayName": "java-to-angular-setting-class",
   "description": "Convierte atributos de clases Java con anotaciones JPA a propiedades de Angular, aplicando decoradores personalizados adaptados al framework Setting.",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "publisher": "Moncho",
   "icon": "icon.png",
   "license": "MIT",

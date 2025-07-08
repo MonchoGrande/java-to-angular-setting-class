@@ -35,7 +35,13 @@ function convertirJavaAAngular(javaCode: string): string {
 	let incluirId = false;
 
 	for (let i = 0; i < lines.length; i++) {
-		const line = lines[i].trim();
+		let line = lines[i].trim();
+
+		if (line.startsWith('//') || line.startsWith('/*') || line.startsWith('*') || line.startsWith('*/')) {
+			continue;
+		}
+
+		line = line.split('//')[0].trim();
 
 		// Detectar si se incluye la línea del serialVersionUID (dentro del texto seleccionado)
 		if (/private\s+static\s+final\s+long\s+serialVersionUID/.test(line)) {
@@ -61,8 +67,6 @@ function convertirJavaAAngular(javaCode: string): string {
 			decorators.push(`{ min: 0, digits: { digitos: ${integer}, decimales: ${fraction} } }`);
 			continue;
 		}
-
-
 
 		if (line.startsWith('@Column')) continue;
 		if (line.startsWith('@JoinColumn')) continue;

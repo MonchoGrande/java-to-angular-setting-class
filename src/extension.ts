@@ -33,11 +33,23 @@ function convertirJavaAAngular(javaCode: string): string {
 	let resultado = '';
 	let decorators: string[] = [];
 	let incluirId = false;
+	let dentroDeComentarioBloque = false;
 
 	for (let i = 0; i < lines.length; i++) {
 		let line = lines[i].trim();
 
-		if (line.startsWith('//') || line.startsWith('/*') || line.startsWith('*') || line.startsWith('*/')) {
+		if (line.startsWith('/**') || line.startsWith('/*')) {
+			dentroDeComentarioBloque = true;
+		}
+
+		if (dentroDeComentarioBloque) {
+			if (line.includes('*/')) {
+				dentroDeComentarioBloque = false;
+			}
+			continue;
+		}
+
+		if (line.startsWith('//') || line.startsWith('*')) {
 			continue;
 		}
 

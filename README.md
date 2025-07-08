@@ -1,14 +1,29 @@
-# java-to-angular-setting-class
+# 🧩 java-to-angular-setting-class
 
-Convierte clases de Java en clases de Angular adaptadas al framework de setting.
+Convierte atributos de clases Java JPA en propiedades TypeScript con decoradores personalizados, adaptados al framework **Setting**.
 
-## Uso
+---
 
-Selecciona código Java en el editor y ejecuta el comando "Convert Java Entity to Angular Setting Class" desde el menú contextual (botón derecho) o con Ctrl+Shift+P. Pega el código en tu entidad de frontend.
+## 🚀 ¿Cómo usar?
 
+1. Selecciona en el editor los atributos de tu clase Java (con o sin anotaciones JPA).
+2. Haz clic derecho y selecciona:
+   **`Convert Java Entity to Angular Setting Class`**
+3. El código convertido se copia automáticamente al portapapeles.
+4. Pégalo en tu clase Angular correspondiente.
 
-## Vista rápida
+---
 
-¡Mira cómo funciona!
+## 🎯 Características principales
+
+✅ Soporta tipos comunes: `String`, `Integer`, `Double`, `LocalDate`, etc.
+✅ Reconoce relaciones JPA como `@ManyToOne`, `@ManyToMany`, `@JoinColumn`, `@JoinTable`.
+✅ Genera decoradores personalizados:
+`@Texto`, `@Numero`, `@Fecha`, `@ObjectId`, `@ArrayObjectId`, `@ArrayEntity`, etc.
+✅ Interpreta validaciones como `@NotNull`, `@Size`, `@Digits`.
+
+---
+
+## 🖼️ Vista rápida
 
 ![Demo del plugin](media/demo.gif)

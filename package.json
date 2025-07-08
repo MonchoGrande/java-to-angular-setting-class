@@ -2,7 +2,7 @@
   "name": "java-to-angular-setting-class",
   "displayName": "java-to-angular-setting-class",
   "description": "Transforma campos Java con JPA en propiedades TypeScript con decoradores para fwk Setting.",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "publisher": "Moncho",
   "icon": "icon.png",
   "license": "CC-BY-ND-4.0",

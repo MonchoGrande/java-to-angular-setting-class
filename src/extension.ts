@@ -28,9 +28,9 @@ export function activate(context: vscode.ExtensionContext) {
 }
 
 function convertirJavaAAngular(javaCode: string): string {
-	const lines = javaCode.split('\n');
+	const lineas = javaCode.split('\n');
 
-	let resultado = '';
+	const resultadoLineas: string[] = [];
 	let decorators: string[] = [];
 	let incluirId = false;
 	let dentroDeComentarioBloque = false;
@@ -61,7 +61,7 @@ function convertirJavaAAngular(javaCode: string): string {
 			procesar: (match: RegExpMatchArray) => {
 				const integer = match[1];
 				const fraction = match[2];
-				decorators.push(`{ min: 0, digits: { digitos: ${integer}, decimales: ${fraction} } }`);
+				decorators.push(`{ min: 0, digits: { digitos: ${integer}, decimales: ${fraction} }}`);
 			}
 		},
 		{
@@ -81,102 +81,93 @@ function convertirJavaAAngular(javaCode: string): string {
 	];
 
 
-	for (let i = 0; i < lines.length; i++) {
-		let line = lines[i].trim();
+	for (let linea of lineas) {
+		linea = linea.trim();
 
-		if (anotacionesIgnoradas.some(anotacion => line.startsWith(anotacion))) {
-			continue;
-		}
+		// Ignorar anotaciones que no queremos procesar
+		if (anotacionesIgnoradas.some(a => linea.startsWith(a))) continue;
 
-		if (line.startsWith('/**') || line.startsWith('/*')) {
-			dentroDeComentarioBloque = true;
-		}
+		// Ignorar codigo comentado
+		if (linea.startsWith('/**') || linea.startsWith('/*')) dentroDeComentarioBloque = true;
 
 		if (dentroDeComentarioBloque) {
-			if (line.includes('*/')) {
-				dentroDeComentarioBloque = false;
-			}
+			if (linea.includes('*/')) dentroDeComentarioBloque = false;
 			continue;
 		}
 
-		if (line.startsWith('//') || line.startsWith('*')) {
-			continue;
-		}
+		if (linea.startsWith('//') || linea.startsWith('*')) continue;
 
-		line = line.split('//')[0].trim();
+		// Quitar comentarios al final de línea
+		linea = linea.split('//')[0].trim();
 
+		// Procesar anotaciones específicas que llenan decorators, jsonOpts o flags
 		let procesada = false;
 		for (const { regex, procesar } of anotacionesProcesar) {
-			const match = line.match(regex);
+			const match = linea.match(regex);
 			if (match) {
 				procesar(match);
 				procesada = true;
 				break;
 			}
 		}
-		if (procesada) {
-			continue;
+		if (procesada) continue;
+
+		const coincidencia = linea.match(/private\s+([\w<>]+)\s+(\w+)(?=\s|=|;|$)/);
+
+		if (!coincidencia) continue;
+
+		const tipoJava = coincidencia[1];
+		const nombreCampo = coincidencia[2];
+
+		let tipoTS = '';
+		let decorador = '';
+
+		if (tipoJava.startsWith('List<')) {
+			const entidad = tipoJava.match(/<(\w+)>/)?.[1] || 'Unknown';
+			tipoTS = `${entidad}[] | null`;
+			decorador = `@ArrayEntity({ entity: ${entidad} })`;
+		} else if (tipoJava.startsWith('Set<')) {
+			const entidad = tipoJava.match(/<(\w+)>/)?.[1] || 'Unknown';
+			tipoTS = `${entidad}[] | null`;
+			decorador = `@ArrayObjectId({ mapToEntity: ${entidad} })`;
+		} else if (['Double', 'Integer', 'Long'].includes(tipoJava)) {
+			tipoTS = 'number | null';
+			decorador = construirDecorador('@Numero', decorators);
+		} else if (esJson && tipoJava === 'String') {
+			tipoTS = 'JSON | null';
+			decorador = construirDecorador('@JsonObject', [...decorators, ...jsonOpts]);
+		} else if (tipoJava === 'String') {
+			tipoTS = 'string | null';
+			decorador = construirDecorador('@Texto', decorators);
+		} else if (['LocalDate', 'LocalDateTime'].includes(tipoJava)) {
+			tipoTS = 'Date | null';
+			decorador = construirDecorador('@Fecha', decorators);
+		} else if ((tipoJava === 'Boolean')) {
+			tipoTS = 'boolean | null';
+			decorador = construirDecorador('@Booleano', decorators);
+		} else {
+			tipoTS = `${tipoJava} | null`;
+			decorador = construirDecorador('@ObjectId', decorators);
 		}
+		resultadoLineas.push(`${decorador}\n${nombreCampo}: ${tipoTS} = null;\n`);
 
-		const coincidencia = line.match(/private\s+([\w<>]+)\s+(\w+)(?=\s|=|;|$)/);
+		// Reiniciar estado para el siguiente campo
+		decorators = [];
+		jsonOpts = [];
+		esJson = false;
 
-		if (coincidencia) {
-			const tipoJava = coincidencia[1];
-			const nombreCampo = coincidencia[2];
-
-			let tipoTS = '';
-			let decorador = '';
-
-			if (tipoJava.startsWith('List<')) {
-				const entidad = tipoJava.match(/<(\w+)>/)?.[1] || 'Unknown';
-				tipoTS = `${entidad}[] | null`;
-				decorador = `@ArrayEntity({ entity: ${entidad} })`;
-			} else if (tipoJava.startsWith('Set<')) {
-				const entidad = tipoJava.match(/<(\w+)>/)?.[1] || 'Unknown';
-				tipoTS = `${entidad}[] | null`;
-				decorador = `@ArrayObjectId({ mapToEntity: ${entidad} })`;
-			} else if (['Double', 'Integer', 'Long'].includes(tipoJava)) {
-				tipoTS = 'number | null';
-				const options = decorators.length ? decorators[0] : '';
-				decorador = `@Numero(${options})`;
-			} else if (esJson && tipoJava === 'String') {
-				tipoTS = 'JSON | null';
-				const opciones = [...decorators, ...jsonOpts];
-				decorador = `@JsonObject({ ${opciones.join(', ')} })`;
-			} else if (tipoJava === 'String') {
-				tipoTS = 'string | null';
-				const options = decorators.length ? `{ ${decorators.join(', ')} }` : '';
-				decorador = `@Texto(${options})`;
-			} else if (['LocalDate', 'LocalDateTime'].includes(tipoJava)) {
-				tipoTS = 'Date | null';
-				const options = decorators.length ? `{ ${decorators.join(', ')} }` : '';
-				decorador = `@Fecha(${options})`;
-			} else if ((tipoJava === 'Boolean')) {
-				tipoTS = 'boolean | null';
-				const options = decorators.length ? `{ ${decorators.join(', ')} }` : '';
-				decorador = `@Booleano(${options})`;
-			} else {
-				tipoTS = `${tipoJava} | null`;
-				const options = decorators.length ? `{ ${decorators.join(', ')} }` : '';
-				decorador = `@ObjectId(${options})`;
-			}
-
-			// Limpiar paréntesis vacíos
-			if (decorador.endsWith('({  })') || decorador.endsWith('({})')) {
-				decorador = decorador.split('(')[0] + '()';
-			}
-
-			resultado += `${decorador}\n${nombreCampo}: ${tipoTS} = null;\n\n`;
-
-			decorators = [];
-			jsonOpts = [];
-			esJson = false;
-		}
 	}
 
 	if (incluirId) {
-		resultado = `@Id('number')\nid = null;\n\n` + resultado.trim();
+		resultadoLineas.unshift(`@Id('number')\nid = null;\n\n`);
 	}
 
-	return resultado.trim();
+	return resultadoLineas.join('').trim();
+}
+
+function construirDecorador(nombre: string, opciones: string[]): string {
+	const limpias = opciones.filter(opt => opt?.trim());
+	const opts = limpias.length ? `{ ${limpias.join(', ')} }` : '';
+	const decorador = `${nombre}(${opts})`;
+	return decorador.endsWith('({})') ? `${nombre}()` : decorador;
 }

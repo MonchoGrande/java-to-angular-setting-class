@@ -101,6 +101,10 @@ function convertirJavaAAngular(javaCode: string): string {
 				tipoTS = 'Date | null';
 				const options = decorators.length ? `{ ${decorators.join(', ')} }` : '';
 				decorador = `@Fecha(${options})`;
+			} else if ((tipoJava === 'Boolean')) {
+				tipoTS = 'boolean | null';
+				const options = decorators.length ? `{ ${decorators.join(', ')} }` : '';
+				decorador = `@Booleano(${options})`;
 			} else {
 				tipoTS = `${tipoJava} | null`;
 				const options = decorators.length ? `{ ${decorators.join(', ')} }` : '';

@@ -54,10 +54,21 @@ function convertirJavaAAngular(javaCode: string): string {
 			continue;
 		}
 
+		const digitsMatch = line.match(/@Digits\s*\(\s*integer\s*=\s*(\d+),\s*fraction\s*=\s*(\d+)\s*\)/);
+		if (digitsMatch) {
+			const integer = digitsMatch[1];
+			const fraction = digitsMatch[2];
+			decorators.push(`{ min: 0, digits: { digitos: ${integer}, decimales: ${fraction} } }`);
+			continue;
+		}
+
+
+
 		if (line.startsWith('@Column')) continue;
 		if (line.startsWith('@JoinColumn')) continue;
-
-		const isRelation = line.startsWith('@ManyToOne');
+		if (line.startsWith('@ManyToMany')) continue;
+		if (line.startsWith('@JoinTable')) continue;
+		if (line.startsWith('@ManyToOne')) continue;
 
 		const fieldMatch = line.match(/private\s+([\w<>]+)\s+(\w+);/);
 		if (fieldMatch) {
@@ -73,22 +84,26 @@ function convertirJavaAAngular(javaCode: string): string {
 				const entidad = tipoJava.match(/<(\w+)>/)?.[1] || 'Unknown';
 				tipoTS = `${entidad}[] | null`;
 				decorador = `@ArrayEntity({ entity: ${entidad} })`;
-			} if (tipoJava.startsWith('Set<')) {
+			} else if (tipoJava.startsWith('Set<')) {
 				const entidad = tipoJava.match(/<(\w+)>/)?.[1] || 'Unknown';
 				tipoTS = `${entidad}[] | null`;
 				decorador = `@ArrayObjectId({ mapToEntity: ${entidad} })`;
 			} else if (['Double', 'Integer', 'Long'].includes(tipoJava)) {
 				tipoTS = 'number | null';
-				decorador = `@Numero(${options || ''})`;
+				const options = decorators.length ? decorators[0] : '';
+				decorador = `@Numero(${options})`;
 			} else if (tipoJava === 'String') {
 				tipoTS = 'string | null';
-				decorador = `@Texto(${options || ''})`;
+				const options = decorators.length ? `{ ${decorators.join(', ')} }` : '';
+				decorador = `@Texto(${options})`;
 			} else if (['LocalDate', 'LocalDateTime'].includes(tipoJava)) {
 				tipoTS = 'Date | null';
-				decorador = `@Fecha(${options || ''})`;
+				const options = decorators.length ? `{ ${decorators.join(', ')} }` : '';
+				decorador = `@Fecha(${options})`;
 			} else {
 				tipoTS = `${tipoJava} | null`;
-				decorador = `@ObjectId(${options || ''})`;
+				const options = decorators.length ? `{ ${decorators.join(', ')} }` : '';
+				decorador = `@ObjectId(${options})`;
 			}
 
 			// Limpiar paréntesis vacíos

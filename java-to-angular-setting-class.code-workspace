@@ -1,0 +1,13 @@
+{
+	"folders": [
+		{
+			"path": "."
+		}
+	],
+	"settings": {
+		"typescript.tsc.autoDetect": "off",
+		"workbench.colorCustomizations": {
+			"activityBar.border": "#FFD700"
+		}
+	}
+}

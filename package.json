@@ -2,7 +2,7 @@
   "name": "java-to-angular-setting-class",
   "displayName": "java-to-angular-setting-class",
   "description": "Convierte clases de java en clases de angular adaptadas al fwk de setting",
-  "version": "0.0.8",
+  "version": "0.0.9",
   "publisher": "Moncho",
   "icon": "icon.png",
   "license": "MIT",

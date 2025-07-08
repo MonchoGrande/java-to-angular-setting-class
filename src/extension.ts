@@ -15,8 +15,7 @@ export function activate(context: vscode.ExtensionContext) {
 			return;
 		}
 
-		console.log('Selected text:', selectedText);
-
+		// Convertir el texto seleccionado
 		const converted = convertirJavaAAngular(selectedText);
 
 		// Copiar el texto transformado al portapapeles (sin tocar el editor)

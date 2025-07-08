@@ -34,9 +34,43 @@ function convertirJavaAAngular(javaCode: string): string {
 	let decorators: string[] = [];
 	let incluirId = false;
 	let dentroDeComentarioBloque = false;
+	const anotacionesIgnoradas = ['@Column', '@JoinColumn', '@JoinTable', '@ManyToMany', '@ManyToOne', '@OneToMany', '@MlCs',
+		'@OneToOne', '@Embedded', '@EmbeddedId', '@MapsId', '@Id', '@GeneratedValue', '@Enumerated', '@Lob', '@Transient', '@Version'
+	];
+
+	const anotacionesProcesar = [
+		{
+			regex: /^private\s+static\s+final\s+long\s+serialVersionUID/,
+			procesar: () => { incluirId = true; }
+		},
+		{
+			regex: /^@NotNull/,
+			procesar: () => { decorators.push('required: true'); }
+		},
+		{
+			regex: /@Size\(max\s*=\s*(\d+)\)/,
+			procesar: (match: RegExpMatchArray) => {
+				decorators.push(`maxLength: ${match[1]}`);
+			}
+		},
+		{
+			regex: /@Digits\s*\(\s*integer\s*=\s*(\d+),\s*fraction\s*=\s*(\d+)\s*\)/,
+			procesar: (match: RegExpMatchArray) => {
+				const integer = match[1];
+				const fraction = match[2];
+				decorators.push(`{ min: 0, digits: { digitos: ${integer}, decimales: ${fraction} } }`);
+			}
+		}
+	];
+
 
 	for (let i = 0; i < lines.length; i++) {
 		let line = lines[i].trim();
+
+		if (anotacionesIgnoradas.some(anotacion => line.startsWith(anotacion))) {
+			continue;
+		}
+
 
 		if (line.startsWith('/**') || line.startsWith('/*')) {
 			dentroDeComentarioBloque = true;
@@ -55,36 +89,18 @@ function convertirJavaAAngular(javaCode: string): string {
 
 		line = line.split('//')[0].trim();
 
-		// Detectar si se incluye la línea del serialVersionUID (dentro del texto seleccionado)
-		if (/private\s+static\s+final\s+long\s+serialVersionUID/.test(line)) {
-			incluirId = true;
+		let procesada = false;
+		for (const { regex, procesar } of anotacionesProcesar) {
+			const match = line.match(regex);
+			if (match) {
+				procesar(match);
+				procesada = true;
+				break;
+			}
+		}
+		if (procesada) {
 			continue;
 		}
-
-		if (line.startsWith('@NotNull')) {
-			decorators.push('required: true');
-			continue;
-		}
-
-		const sizeMatch = line.match(/@Size\(max\s*=\s*(\d+)\)/);
-		if (sizeMatch) {
-			decorators.push(`maxLength: ${sizeMatch[1]}`);
-			continue;
-		}
-
-		const digitsMatch = line.match(/@Digits\s*\(\s*integer\s*=\s*(\d+),\s*fraction\s*=\s*(\d+)\s*\)/);
-		if (digitsMatch) {
-			const integer = digitsMatch[1];
-			const fraction = digitsMatch[2];
-			decorators.push(`{ min: 0, digits: { digitos: ${integer}, decimales: ${fraction} } }`);
-			continue;
-		}
-
-		if (line.startsWith('@Column')) continue;
-		if (line.startsWith('@JoinColumn')) continue;
-		if (line.startsWith('@ManyToMany')) continue;
-		if (line.startsWith('@JoinTable')) continue;
-		if (line.startsWith('@ManyToOne')) continue;
 
 		const fieldMatch = line.match(/private\s+([\w<>]+)\s+(\w+)(?=\s|=|;|$)/);
 

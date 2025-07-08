@@ -51,25 +51,48 @@ function convertirJavaAAngular(javaCode: string): string {
 			procesar: () => { decorators.push('required: true'); }
 		},
 		{
-			regex: /@Size\(max\s*=\s*(\d+)\)/,
+			regex: /@Size\s*\(\s*(min\s*=\s*(\d+))?\s*,?\s*(max\s*=\s*(\d+))?\s*\)/,
 			procesar: (match: RegExpMatchArray) => {
-				decorators.push(`maxLength: ${match[1]}`);
+				if (match[2]) {
+					decorators.push(`minLength: ${match[2]}`);
+				}
+				if (match[4]) {
+					decorators.push(`maxLength: ${match[4]}`);
+				}
 			}
 		},
 		{
-			regex: /@Digits\s*\(\s*integer\s*=\s*(\d+),\s*fraction\s*=\s*(\d+)\s*\)/,
+			regex: /@Digits\s*\(([^)]*)\)/,
 			procesar: (match: RegExpMatchArray) => {
-				const integer = match[1];
-				const fraction = match[2];
+				const params = match[1]
+					.split(',')
+					.map(p => p.trim())
+					.reduce<{ integer?: string; fraction?: string }>((acc, curr) => {
+						if (curr.startsWith('integer')) {
+							acc.integer = curr.split('=')[1].trim();
+						}
+						if (curr.startsWith('fraction')) {
+							acc.fraction = curr.split('=')[1].trim();
+						}
+						return acc;
+					}, {});
+
+				const integer = params.integer ?? '0';
+				const fraction = params.fraction ?? '0';
+
 				decorators.push(`{ min: 0, digits: { digitos: ${integer}, decimales: ${fraction} }}`);
 			}
 		},
 		{
-			regex: /@MlCs\s*\(\s*min\s*=\s*(\d+)\s*,\s*max\s*=\s*(\d+)\s*\)/,
+			regex: /@MlCs\s*\(\s*(?:min\s*=\s*(\d+))?\s*,?\s*(?:max\s*=\s*(\d+))?\s*\)/,
 			procesar: (match: RegExpMatchArray) => {
 				esJson = true;
-				jsonOpts.push(`minFieldLength: ${match[1]}`);
-				jsonOpts.push(`maxFieldLength: ${match[2]}`);
+				if (match[1]) {
+					jsonOpts.push(`minFieldLength: ${match[1]}`);
+				}
+				if (match[2]) {
+					jsonOpts.push(`maxFieldLength: ${match[2]}`);
+				}
 			}
 		},
 		{

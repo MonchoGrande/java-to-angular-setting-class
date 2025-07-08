@@ -149,7 +149,7 @@ function convertirJavaAAngular(javaCode: string): string {
 			tipoTS = `${tipoJava} | null`;
 			decorador = construirDecorador('@ObjectId', decorators);
 		}
-		resultadoLineas.push(`${decorador}\n${nombreCampo}: ${tipoTS} = null;\n`);
+		resultadoLineas.push(`${decorador}\n${nombreCampo}: ${tipoTS} = null;\n\n`);
 
 		// Reiniciar estado para el siguiente campo
 		decorators = [];

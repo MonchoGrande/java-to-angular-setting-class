@@ -21,7 +21,7 @@ export function activate(context: vscode.ExtensionContext) {
 		// Copiar el texto transformado al portapapeles (sin tocar el editor)
 		await vscode.env.clipboard.writeText(converted);
 
-		vscode.window.showInformationMessage('Código transformado copiado al portapapeles. Pega donde quieras.');
+		vscode.window.showInformationMessage('Código copiado al portapapeles.');
 	});
 
 	context.subscriptions.push(disposable);
@@ -70,7 +70,8 @@ function convertirJavaAAngular(javaCode: string): string {
 		if (line.startsWith('@JoinTable')) continue;
 		if (line.startsWith('@ManyToOne')) continue;
 
-		const fieldMatch = line.match(/private\s+([\w<>]+)\s+(\w+);/);
+		const fieldMatch = line.match(/private\s+([\w<>]+)\s+(\w+)(?=\s|=|;|$)/);
+
 		if (fieldMatch) {
 			const tipoJava = fieldMatch[1];
 			const nombreCampo = fieldMatch[2];

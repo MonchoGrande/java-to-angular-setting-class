@@ -18,7 +18,7 @@ export function activate(context: vscode.ExtensionContext) {
 		// Convertir el texto seleccionado
 		const converted = convertirJavaAAngular(selectedText);
 
-		// Copiar el texto transformado al portapapeles (sin tocar el editor)
+		// Copiar el texto transformado al portapapeles
 		await vscode.env.clipboard.writeText(converted);
 
 		vscode.window.showInformationMessage('Código copiado al portapapeles.');
@@ -34,8 +34,11 @@ function convertirJavaAAngular(javaCode: string): string {
 	let decorators: string[] = [];
 	let incluirId = false;
 	let dentroDeComentarioBloque = false;
-	const anotacionesIgnoradas = ['@Column', '@JoinColumn', '@JoinTable', '@ManyToMany', '@ManyToOne', '@OneToMany', '@MlCs',
-		'@OneToOne', '@Embedded', '@EmbeddedId', '@MapsId', '@Id', '@GeneratedValue', '@Enumerated', '@Lob', '@Transient', '@Version'
+	let esJson = false;
+	let jsonOpts: string[] = [];
+	const anotacionesIgnoradas = ['@Column', '@JoinColumn', '@JoinTable', '@ManyToMany', '@ManyToOne', '@OneToMany', '@EmailCs',
+		'@OneToOne', '@Embedded', '@EmbeddedId', '@MapsId', '@Id', '@GeneratedValue', '@Enumerated', '@Transient', '@Version',
+		'@TelefonoCs', '@Convert', '@ArchivoId', '@Min', '@Max'
 	];
 
 	const anotacionesProcesar = [
@@ -60,6 +63,20 @@ function convertirJavaAAngular(javaCode: string): string {
 				const fraction = match[2];
 				decorators.push(`{ min: 0, digits: { digitos: ${integer}, decimales: ${fraction} } }`);
 			}
+		},
+		{
+			regex: /@MlCs\s*\(\s*min\s*=\s*(\d+)\s*,\s*max\s*=\s*(\d+)\s*\)/,
+			procesar: (match: RegExpMatchArray) => {
+				esJson = true;
+				jsonOpts.push(`minFieldLength: ${match[1]}`);
+				jsonOpts.push(`maxFieldLength: ${match[2]}`);
+			}
+		},
+		{
+			regex: /^@Lob/,
+			procesar: () => {
+				esJson = true;
+			}
 		}
 	];
 
@@ -70,7 +87,6 @@ function convertirJavaAAngular(javaCode: string): string {
 		if (anotacionesIgnoradas.some(anotacion => line.startsWith(anotacion))) {
 			continue;
 		}
-
 
 		if (line.startsWith('/**') || line.startsWith('/*')) {
 			dentroDeComentarioBloque = true;
@@ -102,16 +118,14 @@ function convertirJavaAAngular(javaCode: string): string {
 			continue;
 		}
 
-		const fieldMatch = line.match(/private\s+([\w<>]+)\s+(\w+)(?=\s|=|;|$)/);
+		const coincidencia = line.match(/private\s+([\w<>]+)\s+(\w+)(?=\s|=|;|$)/);
 
-		if (fieldMatch) {
-			const tipoJava = fieldMatch[1];
-			const nombreCampo = fieldMatch[2];
+		if (coincidencia) {
+			const tipoJava = coincidencia[1];
+			const nombreCampo = coincidencia[2];
 
 			let tipoTS = '';
 			let decorador = '';
-
-			const options = decorators.length ? `{ ${decorators.join(', ')} }` : '';
 
 			if (tipoJava.startsWith('List<')) {
 				const entidad = tipoJava.match(/<(\w+)>/)?.[1] || 'Unknown';
@@ -125,6 +139,10 @@ function convertirJavaAAngular(javaCode: string): string {
 				tipoTS = 'number | null';
 				const options = decorators.length ? decorators[0] : '';
 				decorador = `@Numero(${options})`;
+			} else if (esJson && tipoJava === 'String') {
+				tipoTS = 'JSON | null';
+				const opciones = [...decorators, ...jsonOpts];
+				decorador = `@JsonObject({ ${opciones.join(', ')} })`;
 			} else if (tipoJava === 'String') {
 				tipoTS = 'string | null';
 				const options = decorators.length ? `{ ${decorators.join(', ')} }` : '';
@@ -150,11 +168,10 @@ function convertirJavaAAngular(javaCode: string): string {
 
 			resultado += `${decorador}\n${nombreCampo}: ${tipoTS} = null;\n\n`;
 
-			// Reset
 			decorators = [];
+			jsonOpts = [];
+			esJson = false;
 		}
-
-
 	}
 
 	if (incluirId) {

@@ -73,6 +73,10 @@ function convertirJavaAAngular(javaCode: string): string {
 				const entidad = tipoJava.match(/<(\w+)>/)?.[1] || 'Unknown';
 				tipoTS = `${entidad}[] | null`;
 				decorador = `@ArrayEntity({ entity: ${entidad} })`;
+			} if (tipoJava.startsWith('Set<')) {
+				const entidad = tipoJava.match(/<(\w+)>/)?.[1] || 'Unknown';
+				tipoTS = `${entidad}[] | null`;
+				decorador = `@ArrayObjectId({ mapToEntity: ${entidad} })`;
 			} else if (['Double', 'Integer', 'Long'].includes(tipoJava)) {
 				tipoTS = 'number | null';
 				decorador = `@Numero(${options || ''})`;

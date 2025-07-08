@@ -5,6 +5,7 @@
   "version": "0.0.6",
   "publisher": "Moncho",
   "icon": "icon.png",
+  "license": "MIT",
   "engines": {
     "vscode": "^1.101.0"
   },
